@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Material Walkthrough Demo</title>
+<meta name="description" content="A demo concept by Chris Dunn: a walkthrough of a building where materials are identified and priced as you look around. Sample prices.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bp:#0d3868; --bp-deep:#0a2d55; --ink:#f2f9ff; --cyan:#a9defc; --mute:#8ec0e6; --hi:#ffd978;
+  --grid:rgba(169,222,252,.06); --grid2:rgba(169,222,252,.12);
+  --hand:"Architects Daughter","Segoe Print","Bradley Hand",ui-rounded,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --out:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;color:var(--ink);font:400 15px/1.55 var(--mono);background-color:var(--bp);
+  background-image:linear-gradient(var(--grid2) 1px,transparent 1px),linear-gradient(90deg,var(--grid2) 1px,transparent 1px),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;overflow-x:hidden}
+h1,h2,p,ul,ol{margin:0}
+a{color:var(--ink)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--hi);outline-offset:3px}
+.cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+
+/* ---------- stage ---------- */
+.stage{position:relative;height:100vh;height:100svh;min-height:520px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#11457e 0%,var(--bp-deep) 75%)}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;inset:0;pointer-events:none}
+.vf{position:absolute;width:34px;height:34px;border:2px solid var(--cyan);opacity:.85}
+.vf.tl{top:14px;left:14px;border-right:0;border-bottom:0}.vf.tr{top:14px;right:14px;border-left:0;border-bottom:0}
+.vf.bl{bottom:14px;left:14px;border-right:0;border-top:0}.vf.br{bottom:14px;right:14px;border-left:0;border-top:0}
+.top{position:absolute;top:24px;left:30px;right:30px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rec{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+.rec i{width:8px;height:8px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 8px #ff6b6b;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.title{font:400 20px/1.15 var(--hand);color:var(--ink);margin-top:6px}
+.total{text-align:right;background:rgba(10,45,85,.72);border:1px solid rgba(169,222,252,.45);padding:8px 12px;min-width:150px}
+.total b{display:block;font:600 22px/1.1 var(--mono);color:var(--hi);font-variant-numeric:tabular-nums}
+.total span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.reticle{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border:1px solid rgba(169,222,252,.55);border-radius:50%}
+.reticle::after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px;background:var(--cyan);border-radius:50%}
+svg.lead{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+svg.lead line{stroke:var(--hi);stroke-width:1.5}
+svg.lead circle{fill:var(--hi)}
+.tag{position:absolute;left:0;top:0;width:min(290px,72vw);background:rgba(10,45,85,.9);border:1px solid var(--hi);padding:10px 12px 11px;
+  opacity:0;transform:translateY(6px) scale(.97);transition:opacity .28s var(--out),transform .28s var(--out);will-change:transform}
+.tag.on{opacity:1;transform:none}
+.tag .cap{color:var(--hi)}
+.tag h2{font:400 21px/1.15 var(--hand);margin:3px 0 4px}
+.tag .ln{font-size:13px;color:var(--cyan);font-variant-numeric:tabular-nums}
+.tag .ln b{color:var(--ink);font-weight:600}
+.chip{display:inline-block;margin-top:7px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#1a1a1a;background:var(--hi);padding:2px 7px}
+.bar{position:absolute;left:30px;right:30px;bottom:26px;height:2px;background:rgba(169,222,252,.25)}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--hi)}
+.note{position:absolute;left:30px;bottom:36px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+
+/* end card + play */
+.end{position:absolute;inset:0;display:grid;place-items:center;padding:16px;background:rgba(10,45,85,.55);opacity:0;visibility:hidden;transition:opacity .5s ease,visibility 0s .5s}
+.end.on{opacity:1;visibility:visible;transition:opacity .6s ease}
+.card{width:min(560px,100%);background:rgba(10,45,85,.94);border:1px solid var(--cyan);outline:1px solid rgba(169,222,252,.3);outline-offset:-6px;padding:22px 22px 20px}
+.card h2{font:400 28px/1.12 var(--hand);margin:6px 0 10px}
+.card .sum{display:flex;justify-content:space-between;gap:12px;border-top:1px solid rgba(169,222,252,.4);border-bottom:1px solid rgba(169,222,252,.4);padding:10px 0;margin:6px 0 12px}
+.card .sum b{font:600 26px/1.1 var(--mono);color:var(--hi)}
+.card p{font-size:13.5px;color:var(--cyan);margin-bottom:8px}
+.card p strong{color:var(--ink);font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;background:var(--hi);color:#14243a;border:0;font:600 14px var(--mono);text-decoration:none;cursor:pointer;transition:transform .16s var(--out)}
+.btn:active{transform:scale(.97)}
+.lnk{display:inline-flex;align-items:center;min-height:44px;text-decoration:underline;text-underline-offset:4px;color:var(--ink);font-size:14px}
+.play{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);pointer-events:auto}
+.fine{font-size:11px;color:var(--mute);margin-top:12px}
+
+/* ---------- takeoff sheet (always readable, no JS needed) ---------- */
+.sheet{max-width:880px;margin:0 auto;padding:56px 16px 64px}
+.sheet h2{font:400 30px/1.15 var(--hand);margin:6px 0 10px}
+.sheet .intro{color:var(--cyan);max-width:640px;margin-bottom:22px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid rgba(169,222,252,.25);vertical-align:top}
+th{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);font-weight:500}
+td.n,th.n{text-align:right;white-space:nowrap}
+tfoot td{color:var(--hi);font-weight:600;border-bottom:0}
+.lt{display:block;font-size:11px;color:var(--hi)}
+.foot{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:26px}
+@media (max-width:620px){
+  .top{left:24px;right:24px;top:22px}.title{font-size:17px}.total{min-width:0;padding:6px 9px}.total b{font-size:17px}
+  .bar{left:24px;right:24px}.note{left:24px}
+  th.q,td.q{display:none}
+}
+body.step .tag,body.step .end{transition:none}body.step .play{display:none}
+@media (prefers-reduced-motion:reduce){.rec i{animation:none}.tag{transition:none}}
+</style>
+</head>
+<body>
+<section class="stage" aria-label="Material walkthrough demo">
+  <canvas id="c" aria-hidden="true"></canvas>
+  <div class="hud" aria-hidden="true">
+    <i class="vf tl"></i><i class="vf tr"></i><i class="vf bl"></i><i class="vf br"></i>
+    <div class="top">
+      <div><div class="rec"><i></i>Scan · material ID</div><div class="title">Material walkthrough</div></div>
+      <div class="total"><span>Running takeoff</span><b id="tot">$0</b></div>
+    </div>
+    <div class="reticle"></div>
+    <svg class="lead"><line id="ll" x1="0" y1="0" x2="0" y2="0"/><circle id="ld" r="4" cx="-20" cy="-20"/></svg>
+    <div class="tag" id="tag"><p class="cap" id="tcap">Material ID · 01</p><h2 id="tname"></h2><p class="ln" id="tline"></p><span class="chip" id="tchip" hidden></span></div>
+    <div class="note">Demo concept · sample prices</div>
+    <div class="bar"><i id="prog"></i></div>
+  </div>
+  <div class="end" id="end">
+    <div class="card" role="group" aria-labelledby="end-h">
+      <p class="cap">Walkthrough complete · demo concept</p>
+      <h2 id="end-h">Every material on the job, identified and priced.</h2>
+      <div class="sum"><span class="cap">Materials takeoff</span><b id="endtot">$7,804</b></div>
+      <p><strong>Order first:</strong> windows (3 to 5 weeks) and roof trusses (2 to 3 weeks). Everything else is stock.</p>
+      <p>A concept I made for my application: what a job site looks like when you can see the cost of everything you look at.</p>
+      <div class="acts">
+        <button class="btn" id="replay" type="button">Replay</button>
+        <a class="lnk" href="../ground-floor/">My blueprint and resume</a>
+        <a class="lnk" href="#takeoff">Takeoff sheet</a>
+      </div>
+      <p class="fine">Demo concept by Chris Dunn. Sample prices based on typical 2026 DC-area retail ranges. Not a quote.</p>
+    </div>
+  </div>
+  <button class="btn play" id="play" type="button" hidden>Play walkthrough</button>
+</section>
+
+<section class="sheet" id="takeoff" aria-labelledby="sheet-h">
+  <p class="cap">Demo concept · sample prices, not a quote</p>
+  <h2 id="sheet-h">Takeoff sheet</h2>
+  <p class="intro">The walkthrough above tags each material as the camera reaches it. This is the same list in one place: a small 24 by 16 ft house, foundation to roof.</p>
+  <table>
+    <thead><tr><th>Material</th><th class="n q">Qty</th><th class="n q">Unit</th><th class="n">Total</th></tr></thead>
+    <tbody id="rows"></tbody>
+    <tfoot><tr><td>Materials takeoff</td><td class="q"></td><td class="q"></td><td class="n" id="sumcell">$7,803.60</td></tr></tfoot>
+  </table>
+  <div class="foot">
+    <a class="lnk" href="walkthrough.mp4">Watch it as a video</a>
+    <a class="lnk" href="../ground-floor/">My blueprint and resume</a>
+    <a class="lnk" href="mailto:chris@dunntrades.com?subject=4West%20Supply">Email Chris</a>
+    <a class="lnk" href="tel:+17033953959">703-395-3959</a>
+  </div>
+  <p class="fine">Demo concept by Chris Dunn. Prices are samples based on typical 2026 DC-area retail ranges, before tax and delivery. Not a quote and not data from any company.</p>
+</section>
+
+<script>
+var ITEMS=[
+ {g:'rebar',   name:'#4 rebar, 20 ft',               qty:30, unit:'pcs',   price:14.00,  a:[4,0.25,4]},
+ {g:'concrete',name:'Ready-mix concrete, 3,000 PSI', qty:8,  unit:'cu yd', price:165.00, a:[9,0.35,7.6]},
+ {g:'studs',   name:'2x4x8 SPF framing studs',       qty:84, unit:'pcs',   price:4.65,   a:[-3.2,5,8]},
+ {g:'osb',     name:'7/16 in OSB sheathing, 4x8',    qty:24, unit:'sheets',price:14.50,  a:[-8,4.6,-8.15]},
+ {g:'wrap',    name:'House wrap, 9 x 150 ft roll',   qty:1,  unit:'roll',  price:185.00, a:[3,6,-8.3]},
+ {g:'windows', name:'Vinyl double-hung window, 36x60',qty:4, unit:'ea',    price:380.00, a:[-6,5.6,8.1], lead:'Long lead · 3 to 5 weeks'},
+ {g:'drywall', name:'1/2 in drywall, 4x8',           qty:36, unit:'sheets',price:15.00,  a:[2.1,5,-3]},
+ {g:'trusses', name:'Roof trusses, 16 ft span',      qty:13, unit:'ea',    price:185.00, a:[6,10.6,2.2], lead:'Long lead · 2 to 3 weeks'},
+ {g:'shingles',name:'Architectural shingles',        qty:15, unit:'bundles',price:45.00, a:[-4,9.9,5.6]}
+];
+function money(v,c){return '$'+v.toLocaleString('en-US',{minimumFractionDigits:c?2:0,maximumFractionDigits:c?2:0})}
+(function(){var tb=document.getElementById('rows'),s=0;ITEMS.forEach(function(it){var t=it.qty*it.price;s+=t;
+ var tr=document.createElement('tr');tr.innerHTML='<td>'+it.name+(it.lead?'<span class="lt">'+it.lead+'</span>':'')+'</td><td class="n q">'+it.qty+' '+it.unit+'</td><td class="n q">'+money(it.price,1)+'</td><td class="n">'+money(t,1)+'</td>';tb.appendChild(tr)});
+ document.getElementById('sumcell').textContent=money(s,1);document.getElementById('endtot').textContent=money(s,0)})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+if(!window.THREE)return;
+var Q=new URLSearchParams(location.search),REC=Q.has('rec');
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches&&!REC;
+var cv=document.getElementById('c'),R;
+try{R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true})}catch(e){return}
+R.setPixelRatio(Math.min(devicePixelRatio||1,2));
+var S=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,0.1,400);
+var C_GHOST=0x5f8fbf,C_ON=0xa9defc,C_HI=0xffd978;
+var groups={};
+function G(n){return groups[n]||(groups[n]={fills:[],lines:[],state:0})}
+function box(g,w,h,d,x,y,z,ry,rx){
+  var geo=new THREE.BoxGeometry(w,h,d),m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:C_ON,transparent:true,opacity:0.03,depthWrite:false}));
+  var e=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:C_GHOST,transparent:true,opacity:0.22}));
+  [m,e].forEach(function(o){o.position.set(x,y,z);if(ry)o.rotation.y=ry;if(rx)o.rotation.x=rx;S.add(o)});
+  G(g).fills.push(m);G(g).lines.push(e);return e;
+}
+function lines(g,pts){var geo=new THREE.BufferGeometry().setFromPoints(pts.map(function(p){return new THREE.Vector3(p[0],p[1],p[2])}));
+  var l=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:C_GHOST,transparent:true,opacity:0.22}));S.add(l);G(g).lines.push(l)}
+
+// ground grid
+var gh=new THREE.GridHelper(120,60,0x2a65a3,0x1d4f86);gh.material.transparent=true;gh.material.opacity=.45;gh.position.y=-0.02;S.add(gh);
+// rebar grid + footings outline
+var rp=[];for(var x=-11;x<=11;x+=2)rp.push([x,0.15,-7.5],[x,0.15,7.5]);for(var z=-7;z<=7;z+=2)rp.push([-11.5,0.15,z],[11.5,0.15,z]);lines('rebar',rp);
+// concrete slab + footings
+box('concrete',24,0.33,16,0,0.165,0);
+box('concrete',25.5,1,1.5,0,-0.5,7.6);box('concrete',25.5,1,1.5,0,-0.5,-7.6);box('concrete',1.5,1,14,11.6,-0.5,0);box('concrete',1.5,1,14,-11.6,-0.5,0);
+// framing
+var Y0=0.33,H=8;
+function skip(along,v,fixed){ // openings
+  if(along==='x'&&fixed>0){ if(Math.abs(v+6)<1.6||Math.abs(v-6)<1.6||Math.abs(v)<1.6)return true }
+  if(along==='z'&&Math.abs(v)<1.6)return true; return false }
+for(var xs=-11.85;xs<=11.9;xs+=1.333){ if(!skip('x',xs,1))box('studs',0.15,H,0.29,xs,Y0+H/2,7.85); box('studs',0.15,H,0.29,xs,Y0+H/2,-7.85)}
+for(var zs=-7.6;zs<=7.7;zs+=1.333){ if(!skip('z',zs))box('studs',0.29,H,0.15,11.85,Y0+H/2,zs); if(!skip('z',zs))box('studs',0.29,H,0.15,-11.85,Y0+H/2,zs)}
+[7.85,-7.85].forEach(function(z){box('studs',24,0.15,0.29,0,Y0+0.08,z);box('studs',24,0.3,0.29,0,Y0+H-0.15,z)});
+[11.85,-11.85].forEach(function(x){box('studs',0.29,0.15,16,x,Y0+0.08,0);box('studs',0.29,0.3,16,x,Y0+H-0.15,0)});
+for(var zp=-7.6;zp<=0.2;zp+=1.333)box('studs',0.29,H,0.15,2,Y0+H/2,zp); // interior partition
+// headers / sills at openings
+[[-6,7.85],[6,7.85]].forEach(function(p){box('studs',3.4,0.5,0.29,p[0],Y0+7.3,p[1]);box('studs',3.4,0.15,0.29,p[0],Y0+2.5,p[1])});
+box('studs',3.4,0.5,0.29,0,Y0+7.2,7.85);
+// OSB on back wall (outside) and left wall
+for(var ox=-12;ox<12;ox+=4)for(var oy=0;oy<8;oy+=4)box('osb',3.95,3.95,0.05,ox+2,Y0+oy+2,-8.05);
+for(var oz=-8;oz<8;oz+=4)for(var oy2=0;oy2<8;oy2+=4){ if(oz===-4&&oy2===0||oz===0&&oy2===0||oz===-4&&oy2===4||oz===0&&oy2===4){ } box('osb',0.05,3.95,3.95,-12.05,Y0+oy2+2,oz+2)}
+// house wrap over part of back wall
+box('wrap',15,8,0.04,-1.5+3,Y0+4,-8.2);
+(function(){var w=[];for(var wy=0.9;wy<8;wy+=0.9)w.push([-4.5,Y0+wy,-8.24],[10.5,Y0+wy,-8.24]);lines('wrap',w)})();
+// windows: front two + sides
+function win(x,z,ry){box('windows',3,5,0.25,x,Y0+5,z,ry);box('windows',2.7,0.12,0.3,x,Y0+5,z,ry);
+  box('windows',2.6,2.2,0.02,x+(ry?0:0),Y0+6.25,z,ry);box('windows',2.6,2.2,0.02,x,Y0+3.75,z,ry)}
+win(-6,7.9,0);win(6,7.9,0);win(11.9,0,Math.PI/2);win(-11.9,0,Math.PI/2);
+// drywall on partition (one face)
+for(var dz=-8;dz<0;dz+=4)for(var dy=0;dy<8;dy+=4)box('drywall',0.05,3.95,3.95,2.12,Y0+dy+2,dz+2);
+// trusses
+var TY=Y0+H,TR=4;
+for(var tx=-12;tx<=12.01;tx+=2){var p=[];
+  p.push([tx,TY,-8.8],[tx,TY,8.8]); p.push([tx,TY,-8.8],[tx,TY+TR+0.4,0]); p.push([tx,TY+TR+0.4,0],[tx,TY,8.8]);
+  p.push([tx,TY,-2.7],[tx,TY+2.4,-4]); p.push([tx,TY,-2.7],[tx,TY+TR+0.4,0]); p.push([tx,TY,2.7],[tx,TY+2.4,4]); p.push([tx,TY,2.7],[tx,TY+TR+0.4,0]);
+  lines('trusses',p)}
+// shingles: lower half of front roof plane
+var ang=Math.atan(TR/8.8),len=Math.hypot(8.8,TR);
+for(var k=0;k<5;k++){var t=(k+0.5)/12;var zc=8.8-t*8.8, yc=TY+0.12+t*TR;box('shingles',24.6,0.06,len/12*0.98,0,yc+0.05,zc,0,ang)}
+// delivered pallet
+box('pallet',4,0.4,3,17,0.2,5);box('pallet',4,1.2,2.6,17,1,5);box('pallet',4,0.5,2.6,17,1.85,5.1);
+
+var ORDER=ITEMS.map(function(i){return i.g});
+function setState(n,s){var g=groups[n];if(!g||g.state===s)return;g.state=s;
+  var col=s===2?C_HI:s===1?C_ON:C_GHOST,op=s===2?1:s===1?0.85:0.22,fo=s===2?(n==='wrap'?0.3:0.16):s===1?0.07:0.03;
+  g.lines.forEach(function(l){l.material.color.setHex(col);l.material.opacity=op});g.fills.forEach(function(f){f.material.color.setHex(s===2?C_HI:C_ON);f.material.opacity=fo})}
+setState('pallet',1);
+
+// camera keyframes: [pos, target]
+var STOPS=[
+ [[34,22,38],[0,3,0]],
+ [[13,9,17],[2,0,2]],
+ [[19,4.5,15],[7,0,6]],
+ [[6,6.5,21],[-1,4,8]],
+ [[-17,7,-21],[-5,4,-8]],
+ [[2,6,-21],[3,4.5,-8]],
+ [[-6,6,19],[-6,5.5,8]],
+ [[8.5,5.4,-1],[2,4.6,-3.5]],
+ [[17,17,15],[2,10,1]],
+ [[3,19,23],[-2,9.5,5]],
+ [[36,25,34],[0,5,0]]
+];
+var INTRO=1.6,MOVE=1.35,DWELL=1.95,OUT=2.2;
+var DUR=INTRO+ITEMS.length*(MOVE+DWELL)+OUT;
+function ease(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+var vA=new THREE.Vector3(),vB=new THREE.Vector3(),tgt=new THREE.Vector3();
+function portrait(){return innerWidth<innerHeight}
+function place(i,j,t){var a=STOPS[i],b=STOPS[j],e=ease(t);
+  vA.set(a[0][0],a[0][1],a[0][2]).lerp(vB.set(b[0][0],b[0][1],b[0][2]),e);
+  tgt.set(a[1][0],a[1][1],a[1][2]).lerp(new THREE.Vector3(b[1][0],b[1][1],b[1][2]),e);
+  if(portrait()){vA.sub(tgt).multiplyScalar(1.45).add(tgt)}
+  cam.position.copy(vA);cam.lookAt(tgt)}
+
+var tag=document.getElementById('tag'),ll=document.getElementById('ll'),ld=document.getElementById('ld');
+var totEl=document.getElementById('tot'),prog=document.getElementById('prog'),end=document.getElementById('end'),playB=document.getElementById('play');
+var cur=-1,shown=0,target=0,t0=0,running=false,done=false;
+function showTag(i){var it=ITEMS[i];document.getElementById('tcap').textContent='Material ID · 0'+(i+1);
+  document.getElementById('tname').textContent=it.name;
+  document.getElementById('tline').innerHTML=it.qty+' '+it.unit+' × '+money(it.price,1)+' = <b>'+money(it.qty*it.price,1)+'</b>';
+  var c=document.getElementById('tchip');if(it.lead){c.hidden=false;c.textContent=it.lead}else c.hidden=true;
+  tag.classList.add('on')}
+function hideTag(){tag.classList.remove('on');ld.setAttribute('cx',-20);ll.setAttribute('x1',-20);ll.setAttribute('x2',-20)}
+var pv=new THREE.Vector3();
+function positionTag(i){var a=ITEMS[i].a;pv.set(a[0],a[1],a[2]).project(cam);
+  var W=innerWidth,Hh=cv.clientHeight,x=(pv.x+1)/2*W,y=(1-pv.y)/2*Hh,tw=tag.offsetWidth,th=tag.offsetHeight,tx,ty;
+  if(portrait()){tx=Math.min(Math.max(16,x-tw/2),W-tw-16);ty=y<Hh*0.5?y+60:y-th-60;ty=Math.min(Math.max(92,ty),Hh-th-60)}
+  else{tx=x<W*0.6?x+90:x-tw-90;ty=Math.min(Math.max(90,y-th/2-30),Hh-th-60)}
+  tag.style.transform=tag.classList.contains('on')?'translate('+tx+'px,'+ty+'px)':'translate('+tx+'px,'+(ty+6)+'px)';
+  ld.setAttribute('cx',x);ld.setAttribute('cy',y);ll.setAttribute('x1',x);ll.setAttribute('y1',y);
+  ll.setAttribute('x2',tx<x?tx+tw:tx);ll.setAttribute('y2',ty+th/2)}
+
+function resize(){var w=cv.clientWidth,h=cv.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<h?62:44;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+
+var STEP=Q.has('step');if(STEP)document.body.classList.add('step');
+function frame(now){draw(running?(now-t0)/1000:(done?DUR:0));if(!STEP)requestAnimationFrame(frame)}
+function draw(t){
+  if(t>=DUR&&running){running=false;done=true;end.classList.add('on');playB.hidden=true}
+  var tt=Math.min(t,DUR);prog.style.width=(tt/DUR*100)+'%';
+  var idx=-1,seg;
+  if(tt<INTRO){place(0,0,0)}
+  else if(tt<DUR-OUT){var u=tt-INTRO,k=Math.floor(u/(MOVE+DWELL)),r=u-k*(MOVE+DWELL);
+    if(r<MOVE){place(k,k+1,r/MOVE)}else{place(k+1,k+1,1);idx=k}}
+  else{place(ITEMS.length,ITEMS.length+1,Math.min(1,(tt-(DUR-OUT))/OUT))}
+  if(idx!==cur){if(cur>=0)setState(ORDER[cur],1);cur=idx;
+    if(idx>=0){setState(ORDER[idx],2);showTag(idx);target=ITEMS.slice(0,idx+1).reduce(function(s,i){return s+i.qty*i.price},0)}else hideTag()}
+  if(STEP){if(idx>=0){var r2=(tt-INTRO)-idx*(MOVE+DWELL)-MOVE;tag.style.opacity=Math.min(1,r2/0.25)}else tag.style.opacity=0}
+  if(cur>=0)positionTag(cur);
+  shown+= (target-shown)*0.12; if(Math.abs(target-shown)<0.5)shown=target; totEl.textContent=money(shown,0);
+  R.render(S,cam)}
+
+function start(){Object.keys(groups).forEach(function(n){if(n!=='pallet')setState(n,0)});cur=-1;shown=0;target=0;hideTag();
+  end.classList.remove('on');playB.hidden=true;done=false;running=true;t0=performance.now()}
+document.getElementById('replay').addEventListener('click',start);
+playB.addEventListener('click',start);
+if(reduce){ORDER.forEach(function(n){setState(n,1)});done=true;target=ITEMS.reduce(function(s,i){return s+i.qty*i.price},0);
+  place(ITEMS.length+1,ITEMS.length+1,1);playB.hidden=false;requestAnimationFrame(frame)}
+else if(STEP){running=true;window.__render=function(t){draw(t)}}
+else{requestAnimationFrame(frame);setTimeout(start,REC?300:700)}
+window.__DUR=DUR;
+})();
+</script>
+</body>
+</html>
